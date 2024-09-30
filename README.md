@@ -12,8 +12,13 @@ Uma solução simplificada para gerenciar multiplus ecommerces em um hub unifica
 8) No mesmo terminal executar: npm run dev
 
 ### Integrantes
-- Matheus Gabriel e Silva 
+- Matheus Gabriel e Silva
+  - 1967134 
 - Silvio de Moraes neto
+  - 1969365
 - Renan Solano
+  - 1968758
 - Vinicius Medeiros
-- Henrique Medeiros
+  - 
+- Henrique Medeiros  
+  - 1976730 
