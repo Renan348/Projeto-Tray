@@ -10,3 +10,10 @@ Uma solução simplificada para gerenciar multiplus ecommerces em um hub unifica
 6) Rodar o projeto no visual studio
 7) Abrir a pasta E-Place no cmd e Executar: npm install
 8) No mesmo terminal executar: npm run dev
+
+### Integrantes
+- Matheus Gabriel e Silva 
+- Silvio de Moraes neto
+- Renan Solano
+- Vinicius Medeiros
+- Henrique Medeiros
