@@ -1,5 +1,5 @@
 # Eplace 
-## Uma solução simplificada para gerenciar multiplus ecommerces em um hub unificado a fim de auxiliar comércios com a integração em multiplas plataformas
+### Uma solução simplificada para gerenciar multiplos ecommerces em um hub unificado a fim de auxiliar comércios com a integração em multiplas plataformas
 
 ## passo-a-passo
 1) Instalar o Visual Studio 
@@ -13,7 +13,7 @@
 7) Rodar o projeto no visual studio
 8) Abrir a pasta E-Place no cmd e Executar:
 ```bash
- npm install
+ npm install axios
 ```
 9) No mesmo terminal executar:
 ```bash
@@ -28,6 +28,6 @@
 ## Renan Solano
   - 1968758
 ## Vinicius Medeiros
-  - 
+  - 1970157
 ## Henrique Medeiros  
   - 1976730 
