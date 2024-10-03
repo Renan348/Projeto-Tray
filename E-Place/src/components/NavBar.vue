@@ -5,8 +5,8 @@
         <div class="navbar-brand">
           <h1>
             <a href="/" class="navbar-brand">
-            <img id="logoNav" src="../assets/img/logo.png" alt="E-Place">
-            <strong class="logo-text">E-place</strong>
+              <img id="logoNav" src="../assets/img/logo.png" alt="E-Place">
+              <strong class="logo-text">E-place</strong>
             </a>
           </h1>
         </div>
@@ -17,7 +17,7 @@
             </button>
           </template>
           <template v-else>
-            <button type="button" class="btn custom-btn" data-bs-toggle="modal" data-bs-target="#escolhaEcommerceModal">
+            <button type="button" class="btn custom-btn" @click="navigateToProducts">
               <strong>Cadastrar Produto</strong>
             </button>
           </template>
@@ -40,11 +40,10 @@
                     <a href="#" class="social"><i class="fab fa-linkedin-in"></i></a>
                   </div>
                   <span>ou use seu email para registrar</span>
-                  <input type="text" placeholder="Nome" v-model="registerName" />
-                  <input type="email" placeholder="Email" v-model="registerEmail" />
-                  <input type="password" placeholder="Senha" v-model="registerPassword" />
+                  <input type="email" placeholder="Email" v-model="registerEmail" required />
+                  <input type="password" placeholder="Senha" v-model="registerPassword" required />
                   <p v-if="registerError" class="error-message">{{ registerError }}</p>
-                  <button type="submit">Registrar</button>
+                  <button type="submit" :disabled="loading">{{ loading ? 'Carregando...' : 'Registrar' }}</button>
                 </form>
               </div>
               <div class="form-container sign-in-container">
@@ -56,11 +55,11 @@
                     <a href="#" class="social"><i class="fab fa-linkedin-in"></i></a>
                   </div>
                   <span>ou use sua conta</span>
-                  <input type="email" placeholder="Email" v-model="loginEmail" />
-                  <input type="password" placeholder="Senha" v-model="loginPassword" />
+                  <input type="email" placeholder="Email" v-model="loginEmail" required />
+                  <input type="password" placeholder="Senha" v-model="loginPassword" required />
                   <a href="#">Esqueceu sua senha?</a>
                   <p v-if="loginError" class="error-message">{{ loginError }}</p>
-                  <button type="submit">Entrar</button>
+                  <button type="submit" :disabled="loading">{{ loading ? 'Carregando...' : 'Entrar' }}</button>
                 </form>
               </div>
               <div class="overlay-container">
@@ -85,10 +84,11 @@
   </div>
 </template>
 
-<script>;
+<script>
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { Modal } from 'bootstrap';
+import api from '../router/api';
 
 export default {
   setup() {
@@ -96,22 +96,21 @@ export default {
     const isUserArea = ref(false);
     const loginEmail = ref('');
     const loginPassword = ref('');
-    const registerName = ref('');
     const registerEmail = ref('');
     const registerPassword = ref('');
-    const registeredUser = ref(null);
     const loginModal = ref(null);
+    const loading = ref(false); // Indicador de carregamento
     let modal = null;
 
     const loginError = ref('');
     const registerError = ref('');
+    const users = ref([]); // Lista de usuários registrados
 
     onMounted(() => {
       if (loginModal.value) {
         modal = new Modal(loginModal.value);
       }
 
-      // Lógica para alternar entre os painéis de login e registro
       const signUpButton = document.getElementById('signUp');
       const signInButton = document.getElementById('signIn');
       const container = document.getElementById('container');
@@ -125,7 +124,18 @@ export default {
           container.classList.remove("right-panel-active");
         });
       }
+
+      fetchUsers(); // Buscar usuários ao montar o componente
     });
+
+    const fetchUsers = async () => {
+      try {
+        const response = await api.get('/Usuario'); // GET para listar usuários
+        users.value = response.data;
+      } catch (error) {
+        console.error('Erro ao buscar usuários:', error);
+      }
+    };
 
     const openLoginModal = () => {
       if (!isUserArea.value && modal) {
@@ -133,58 +143,114 @@ export default {
       }
     };
 
-    const login = () => {
-  loginError.value = '';
+    const validateEmail = (email) => {
+      const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return re.test(String(email).toLowerCase());
+    };
 
-  if (!loginEmail.value || !loginPassword.value) {
-    loginError.value = 'Por favor, preencha todos os campos.';
+    const login = async () => {
+  loginError.value = '';  // Limpa os erros de login
+  loading.value = true;   // Inicia o indicador de carregamento
+
+  // Validação básica de email
+  if (!validateEmail(loginEmail.value)) {
+    loginError.value = 'Por favor, insira um email válido.';
+    loading.value = false;
     return;
   }
 
-  if (registeredUser.value && loginEmail.value === registeredUser.value.email && loginPassword.value === registeredUser.value.password) {
-    localStorage.setItem('user', JSON.stringify(registeredUser.value)); // Armazena informações do usuário no localStorage
-    if (modal) {
-      modal.hide();
+  try {
+    // Faz uma requisição ao backend para verificar o login
+    const response = await api.get('/Usuario', {
+      params: { 
+        email: loginEmail.value, 
+        senha: loginPassword.value 
+      }
+    });
 
+    // Se a resposta contiver os dados do usuário, armazena no localStorage
+    if (response.data) {
+      localStorage.setItem('user', JSON.stringify(response.data));
+      modal.hide(); // Fecha o modal de login
       setTimeout(() => {
-        router.push('/perfil');
-        isUserArea.value = true; 
+        router.push('/perfil');  // Redireciona para a página de perfil
+        isUserArea.value = true; // Marca que o usuário está logado
       }, 100);
+    } else {
+      loginError.value = 'Usuário ou senha incorretos. Tente novamente.';
     }
-  } else {
-    loginError.value = 'Usuário ou senha incorretos. Tente novamente.';
+  } catch (error) {
+    loginError.value = 'Erro ao fazer login. Tente novamente mais tarde.';
+  } finally {
+    loading.value = false;  // Finaliza o indicador de carregamento
   }
 };
 
-    const register = () => {
+    const register = async () => {
       registerError.value = '';
+      loading.value = true;
 
-      if (!registerName.value || !registerEmail.value || !registerPassword.value) {
-        registerError.value = 'Por favor, preencha todos os campos.';
-        return;
-      }
-
-      if (!registerEmail.value.includes('@')) {
+      // Validação simples de email e senha
+      if (!validateEmail(registerEmail.value)) {
         registerError.value = 'Por favor, insira um email válido.';
+        loading.value = false;
         return;
       }
 
-      registeredUser.value = {
-        name: registerName.value,
-        email: registerEmail.value,
-        password: registerPassword.value
-      };
-      alert('Registro realizado com sucesso!');
-      loginEmail.value = registerEmail.value;
-      loginPassword.value = registerPassword.value;
-      login();  // Realiza o login automaticamente após o registro
+      if (!registerPassword.value || registerPassword.value.length < 6) {
+        registerError.value = 'A senha deve ter pelo menos 6 caracteres.';
+        loading.value = false;
+        return;
+      }
+
+      try {
+        // Verifica os dados enviados
+        console.log("Enviando dados para registro:", {
+          email: registerEmail.value,
+          senha: registerPassword.value,
+        });
+
+        // Faz a requisição para o backend
+        const response = await api.post('/Usuario', {
+          email: registerEmail.value,
+          senha: registerPassword.value,
+        });
+
+        // Verifica se a resposta foi bem-sucedida (201 = criado)
+        if (response.status === 201) {
+          alert('Registro realizado com sucesso!');
+          // Você pode adicionar lógica para redirecionar ou fazer login após o registro
+        } else {
+          registerError.value = 'Erro ao registrar. Tente novamente.';
+        }
+      } catch (error) {
+        // Tratamento de erros mais robusto
+        if (error.response) {
+          // Se o erro for uma resposta da API
+          console.error("Erro na resposta da API:", error.response);
+          registerError.value = error.response.data.message || 'Erro ao registrar. Tente novamente.';
+        } else if (error.request) {
+          // Se a requisição foi feita, mas não houve resposta
+          console.error("Nenhuma resposta do servidor:", error.request);
+          registerError.value = 'Erro de comunicação com o servidor. Tente novamente mais tarde.';
+        } else {
+          // Se algo deu errado na preparação da requisição
+          console.error("Erro ao configurar a requisição:", error.message);
+          registerError.value = 'Erro ao registrar. Verifique sua conexão.';
+        }
+      } finally {
+        loading.value = false;
+      }
+    };
+
+    const navigateToProducts = () => {
+      router.push('/produtos');
     };
 
     return {
       isUserArea,
       loginEmail,
       loginPassword,
-      registerName,
       registerEmail,
       registerPassword,
       openLoginModal,
@@ -192,11 +258,15 @@ export default {
       register,
       loginModal,
       loginError,
-      registerError
+      registerError,
+      users,
+      loading,
     };
-  }
+  }
 };
 </script>
+
+
 
 <style scoped>
 @import url('https://fonts.googleapis.com/css?family=Montserrat:400,800');
