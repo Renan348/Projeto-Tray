@@ -1,5 +1,4 @@
-﻿using Eplace;
-using Eplace.Models;
+﻿using Eplace.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Eplace.Module
@@ -9,58 +8,43 @@ namespace Eplace.Module
         public static void EndpointsUsuario(this IEndpointRouteBuilder rotas)
         {
             RouteGroupBuilder rotaUsuario = rotas.MapGroup("/Usuario");
-            rotaUsuario.MapGet("/", (eplaceDbContext dbContext) =>
+            
+            rotaUsuario.MapGet("/", async (eplaceDbContext dbContext) =>
             {
-                IEnumerable<Usuario> usuario = dbContext.Usuarios;
-                return usuario;
+                return await dbContext.Usuarios.ToListAsync(); // Usando ToListAsync
             });
 
-            rotaUsuario.MapGet("/{Id}", (eplaceDbContext dbContext, int Id) =>
+            rotaUsuario.MapGet("/{Id}", async (eplaceDbContext dbContext, int Id) =>
             {
-                Usuario? usuario = dbContext.Usuarios.Find(Id);
-                if (usuario is null)
-                {
-                    return Results.NotFound();
-                }
-
-                return TypedResults.Ok<Usuario>(usuario);
+                var usuario = await dbContext.Usuarios.FindAsync(Id);
+                return usuario is null ? Results.NotFound() : TypedResults.Ok(usuario);
             }).Produces<Usuario>();
 
-            rotaUsuario.MapPost("/", (eplaceDbContext dbContext, Usuario usuario) => 
+            rotaUsuario.MapPost("/", async (eplaceDbContext dbContext, Usuario usuario) => 
             {
-                dbContext.Usuarios.Add(usuario);
-                dbContext.SaveChanges();
-
+                await dbContext.Usuarios.AddAsync(usuario);
+                await dbContext.SaveChangesAsync();
                 return TypedResults.Created($"/Usuario/{usuario.Id}", usuario);
             });
 
-            rotaUsuario.MapPut("/{Id}", (eplaceDbContext dbContext, int Id, Usuario usuario) => 
+            rotaUsuario.MapPut("/{Id}", async (eplaceDbContext dbContext, int Id, Usuario usuario) => 
             {
-                Usuario? UsuarioEncontrado = dbContext.Usuarios.Find(Id);
-                if (UsuarioEncontrado is null)
-                {
-                    return Results.NotFound();
-                }
+                var usuarioEncontrado = await dbContext.Usuarios.FindAsync(Id);
+                if (usuarioEncontrado is null) return Results.NotFound();
 
                 usuario.Id = Id;
-
-                dbContext.Entry(UsuarioEncontrado).CurrentValues.SetValues(usuario);
-                dbContext.SaveChanges();
-
+                dbContext.Entry(usuarioEncontrado).CurrentValues.SetValues(usuario);
+                await dbContext.SaveChangesAsync();
                 return TypedResults.NoContent();
             });
 
-            rotaUsuario.MapDelete("/{Id}", (eplaceDbContext dbContext, int Id) => 
+            rotaUsuario.MapDelete("/{Id}", async (eplaceDbContext dbContext, int Id) => 
             {
-                Usuario? UsuarioEncontrado = dbContext.Usuarios.Find(Id);
-                if (UsuarioEncontrado is null)
-                {
-                    return Results.NotFound();
-                }
+                var usuarioEncontrado = await dbContext.Usuarios.FindAsync(Id);
+                if (usuarioEncontrado is null) return Results.NotFound();
 
-                dbContext.Usuarios.Remove(UsuarioEncontrado);
-                dbContext.SaveChanges();
-
+                dbContext.Usuarios.Remove(usuarioEncontrado);
+                await dbContext.SaveChangesAsync();
                 return TypedResults.NoContent();
             });
         }

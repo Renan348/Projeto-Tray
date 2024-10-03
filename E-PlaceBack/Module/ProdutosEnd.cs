@@ -8,58 +8,43 @@ namespace Eplace.Module
         public static void EndpointsProduto(this IEndpointRouteBuilder rotas)
         {
             RouteGroupBuilder rotaProduto = rotas.MapGroup("/Produtos");
-            rotaProduto.MapGet("/", (eplaceDbContext dbContext) =>
+            
+            rotaProduto.MapGet("/", async (eplaceDbContext dbContext) =>
             {
-                IEnumerable<Produtos> produto = dbContext.Produtos;
-                return produto;
+                return await dbContext.Produtos.ToListAsync(); // Usando ToListAsync para operações assíncronas
             });
 
-            rotaProduto.MapGet("/{Id}", (eplaceDbContext dbContext, int Id) => 
+            rotaProduto.MapGet("/{Id}", async (eplaceDbContext dbContext, int Id) => 
             {
-                Produtos? produto = dbContext.Produtos.Find(Id);
-                if (produto is null)
-                {
-                    return Results.NotFound();
-                }
-
-                return TypedResults.Ok<Produtos>(produto);
+                var produto = await dbContext.Produtos.FindAsync(Id);
+                return produto is null ? Results.NotFound() : TypedResults.Ok(produto);
             }).Produces<Produtos>();
 
-            rotaProduto.MapPost("/", (eplaceDbContext dbContext, Produtos produto) => 
+            rotaProduto.MapPost("/", async (eplaceDbContext dbContext, Produtos produto) => 
             {
-                dbContext.Produtos.Add(produto);
-                dbContext.SaveChanges();
-
+                await dbContext.Produtos.AddAsync(produto);
+                await dbContext.SaveChangesAsync();
                 return TypedResults.Created($"/Produtos/{produto.Id}", produto);
             });
 
-            rotaProduto.MapPut("/{Id}", (eplaceDbContext dbContext, int Id, Produtos produto) => 
+            rotaProduto.MapPut("/{Id}", async (eplaceDbContext dbContext, int Id, Produtos produto) => 
             {
-                Produtos? ProdutoEncontrado = dbContext.Produtos.Find(Id);
-                if (ProdutoEncontrado is null)
-                {
-                    return Results.NotFound();
-                }
+                var produtoEncontrado = await dbContext.Produtos.FindAsync(Id);
+                if (produtoEncontrado is null) return Results.NotFound();
 
                 produto.Id = Id;
-
-                dbContext.Entry(ProdutoEncontrado).CurrentValues.SetValues(produto);
-                dbContext.SaveChanges();
-
+                dbContext.Entry(produtoEncontrado).CurrentValues.SetValues(produto);
+                await dbContext.SaveChangesAsync();
                 return TypedResults.NoContent();
             });
-            
-            rotaProduto.MapDelete("/{Id}", (eplaceDbContext dbContext, int Id) => 
+
+            rotaProduto.MapDelete("/{Id}", async (eplaceDbContext dbContext, int Id) => 
             {
-                Produtos? ProdutoEncontrado = dbContext.Produtos.Find(Id);
-                if (ProdutoEncontrado is null)
-                {
-                    return Results.NotFound();
-                }
+                var produtoEncontrado = await dbContext.Produtos.FindAsync(Id);
+                if (produtoEncontrado is null) return Results.NotFound();
 
-                dbContext.Produtos.Remove(ProdutoEncontrado);
-                dbContext.SaveChanges();
-
+                dbContext.Produtos.Remove(produtoEncontrado);
+                await dbContext.SaveChangesAsync();
                 return TypedResults.NoContent();
             });
         }
